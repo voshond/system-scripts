@@ -5,6 +5,7 @@ cursor_installer.py – installs or removes the Cursor AI IDE for the current us
 ✔ AppImage → ~/.local/bin/cursor.appimage
 ✔ Icon     → ~/.local/share/icons/cursor.png
 ✔ Launcher  → ~/.local/share/applications/cursor.desktop
+✔ Default text editor (with backup/restore)
 
 Usage:
     python3 cursor_installer.py install
@@ -15,12 +16,15 @@ Notes:
     `https://www.cursor.com/api/download?platform=linux-x64&releaseTrack=stable`.
 * Some servers return **HTTP 403** if the *User-Agent* header is missing.
     This script now sends a generic User-Agent to avoid blocks.
+* During installation, Cursor will be set as the default text editor.
+* During uninstallation, the previous default text editor will be restored.
 """
 
 import argparse
 import json
 import os
 import stat
+import subprocess
 import sys
 import urllib.request
 from pathlib import Path
@@ -36,6 +40,7 @@ APPIMAGE_PATH = HOME / ".local" / "bin" / "cursor.appimage"
 ICON_PATH = HOME / ".local" / "share" / "icons" / "cursor.png"
 DATA_HOME = Path(os.environ.get("XDG_DATA_HOME", HOME / ".local" / "share"))
 DESKTOP_ENTRY_PATH = DATA_HOME / "applications" / "cursor.desktop"
+DEFAULT_EDITOR_BACKUP = HOME / ".local" / "share" / "cursor-previous-default-editor.txt"
 ZSHRC_ALIAS_COMMENT = "# Cursor alias"
 
 HEADERS = {
@@ -127,6 +132,66 @@ def _remove_alias_from_zshrc():
             new_lines.append(line)
     zshrc.write_text("\n".join(new_lines))
 
+
+def _backup_current_default_editor():
+    """Backup the current default text editor before changing it."""
+    try:
+        result = subprocess.run(
+            ["xdg-mime", "query", "default", "text/plain"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        current_default = result.stdout.strip()
+        if current_default and current_default != "cursor.desktop":
+            DEFAULT_EDITOR_BACKUP.parent.mkdir(parents=True, exist_ok=True)
+            DEFAULT_EDITOR_BACKUP.write_text(current_default)
+            print(f"Backed up current default text editor: {current_default}")
+        else:
+            print("No previous default text editor to backup.")
+    except subprocess.CalledProcessError:
+        print("Warning: Could not query current default text editor.")
+    except Exception as e:
+        print(f"Warning: Error backing up default editor: {e}")
+
+
+def _set_cursor_as_default_editor():
+    """Set Cursor as the default text editor for plain text files."""
+    try:
+        subprocess.run(
+            ["xdg-mime", "default", "cursor.desktop", "text/plain"],
+            check=True
+        )
+        print("✔ Set Cursor as default text editor")
+    except subprocess.CalledProcessError:
+        print("Warning: Could not set Cursor as default text editor.")
+    except Exception as e:
+        print(f"Warning: Error setting default editor: {e}")
+
+
+def _restore_previous_default_editor():
+    """Restore the previous default text editor from backup."""
+    if not DEFAULT_EDITOR_BACKUP.exists():
+        print("No previous default text editor backup found.")
+        return
+    
+    try:
+        previous_default = DEFAULT_EDITOR_BACKUP.read_text().strip()
+        if previous_default:
+            subprocess.run(
+                ["xdg-mime", "default", previous_default, "text/plain"],
+                check=True
+            )
+            print(f"✔ Restored previous default text editor: {previous_default}")
+            DEFAULT_EDITOR_BACKUP.unlink()  # Remove backup file
+        else:
+            print("Backup file was empty, cannot restore.")
+    except subprocess.CalledProcessError:
+        print("Warning: Could not restore previous default text editor.")
+    except Exception as e:
+        print(f"Warning: Error restoring default editor: {e}")
+
+
 def install():
     if APPIMAGE_PATH.exists():
         print("Cursor AI IDE is already installed.")
@@ -139,11 +204,14 @@ def install():
     _download(ICON_URL, ICON_PATH)
     _write_desktop_entry()
     _add_alias_to_zshrc()
+    _backup_current_default_editor()
+    _set_cursor_as_default_editor()
     print("Installation complete! It will appear in the applications menu.")
 
 
 def uninstall():
     print("Removing Cursor AI IDE…")
+    _restore_previous_default_editor()
     for p in (APPIMAGE_PATH, ICON_PATH, DESKTOP_ENTRY_PATH):
         if p.exists():
             print(f"Deleting {p}")
