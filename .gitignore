@@ -1,0 +1,47 @@
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Backup files
+*.backup
+*.old
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Runtime directories
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# Personal configurations that might contain sensitive data
+*config.local*
+*secrets*
+*.key
+*.pem
+*.p12
+
+# Test outputs
+test_*
+output/
+logs/
+
+# OS generated files
+.directory
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent 
