@@ -89,10 +89,11 @@ def _add_exec_permission(path: Path):
 def _write_desktop_entry():
     entry = f"""[Desktop Entry]
 Name=Cursor AI IDE
-Exec={APPIMAGE_PATH} --no-sandbox
+Exec={APPIMAGE_PATH} --no-sandbox %F
 Icon={ICON_PATH}
 Type=Application
 Categories=Development;
+MimeType=text/plain;
 """
     DESKTOP_ENTRY_PATH.write_text(entry)
     print(f"Launcher created at {DESKTOP_ENTRY_PATH}")
