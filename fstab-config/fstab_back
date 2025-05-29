@@ -1,0 +1,37 @@
+# Static information about the filesystems.
+# See fstab(5) for details.
+
+# <file system> <dir> <type> <options> <dump> <pass>
+# /dev/nvme0n1p2
+UUID=4bdfb9db-6b17-489a-a600-1ba84774e042       /               ext4            rw,relatime     0 1
+
+# /dev/nvme0n1p1
+UUID=6A10-CAE4          /boot           vfat            rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro   0 2
+
+# /dev/nvme0n1p3
+UUID=97f411c1-c9f8-4a67-98f2-867388c0561c       /home           ext4            rw,relatime     0 2
+
+# /dev/nvme1n1p4 - data01
+# UUID=D086A2B986A2A008 /mnt/data01 ntfs3 defaults,uid=1000,gid=1000,iocharset=utf8 0 0
+
+# /dev/nvme0n1p1 - data02
+UUID=15EFBBBB308C3EC8 /mnt/data02 ntfs3 defaults,uid=1000,gid=1000,iocharset=utf8 0 0
+
+# /dev/sda1 - archBackup01
+UUID=36ebdf46-5b37-4b80-971d-9988f094a601       /mnt/archBackup01 ext4          rw,relatime     0 1
+
+#Network
+//nas/Documents /mnt/nas01/Documents cifs credentials=/etc/samba/credentials,uid=0,gid=0,vers=3.0,sec=ntlmssp,iocharset=utf8,nofail,x-systemd.automount 0 0
+//nas/Apps /mnt/nas01/Apps cifs credentials=/etc/samba/credentials,uid=0,gid=0,vers=3.0,sec=ntlmssp,iocharset=utf8,nofail,x-systemd.automount 0 0
+//nas/Data\0403\040Backup /mnt/nas01/Data_3_Backup cifs credentials=/etc/samba/credentials,uid=0,gid=0,vers=3.0,sec=ntlmssp,iocharset=utf8,nofail,x-systemd.automount 0 0
+//nas/docker /mnt/nas01/docker cifs credentials=/etc/samba/credentials,uid=0,gid=0,vers=3.0,sec=ntlmssp,iocharset=utf8,nofail,x-systemd.automount 0 0
+//nas/Downloads /mnt/nas01/Downloads cifs credentials=/etc/samba/credentials,uid=0,gid=0,vers=3.0,sec=ntlmssp,iocharset=utf8,nofail,x-systemd.automount 0 0
+//nas/Game /mnt/nas01/Game cifs credentials=/etc/samba/credentials,uid=0,gid=0,vers=3.0,sec=ntlmssp,iocharset=utf8,nofail,x-systemd.automount 0 0
+//nas/HDD\040Backup /mnt/nas01/HDD_Backup cifs credentials=/etc/samba/credentials,uid=0,gid=0,vers=3.0,sec=ntlmssp,iocharset=utf8,nofail,x-systemd.automount 0 0
+//nas/HDD\040Backup\040Mac /mnt/nas01/HDD_Backup_Mac cifs credentials=/etc/samba/credentials,uid=0,gid=0,vers=3.0,sec=ntlmssp,iocharset=utf8,nofail,x-systemd.automount 0 0
+//nas/Public /mnt/nas01/Public cifs credentials=/etc/samba/credentials,uid=0,gid=0,vers=3.0,sec=ntlmssp,iocharset=utf8,nofail,x-systemd.automount 0 0
+//nas/SSD\040Backup /mnt/nas01/SSD_Backup cifs credentials=/etc/samba/credentials,uid=0,gid=0,vers=3.0,sec=ntlmssp,iocharset=utf8,nofail,x-systemd.automount 0 0
+//nas/Video /mnt/nas01/Video cifs credentials=/etc/samba/credentials,uid=0,gid=0,vers=3.0,sec=ntlmssp,iocharset=utf8,nofail,x-systemd.automount 0 0
+
+/dev/disk/by-uuid/D086A2B986A2A008 /mnt/data01 ntfs3 nosuid,nodev,nofail 0 0
+/dev/disk/by-uuid/3FA7A0DD706F7EE2 /mnt/win01 ntfs3 nosuid,nodev,nofail 0 0
