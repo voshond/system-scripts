@@ -7,6 +7,7 @@ REPO="/mnt/archBackup01/borg_repo"
 SCRIPT_PATH="/usr/local/bin/borg_backup.sh"
 SERVICE_FILE="/etc/systemd/system/borg-backup.service"
 TIMER_FILE="/etc/systemd/system/borg-backup.timer"
+LOG_FILE="/var/log/borg_backup.log"
 
 echo "==> Step 1: Install borg (if not installed)..."
 if ! command -v borg &> /dev/null; then
@@ -22,45 +23,51 @@ if [ -d "$REPO" ] && [ -f "$REPO/config" ]; then
 else
     echo "-- Creating new Borg repo at $REPO..."
     sudo mkdir -p "$REPO"
-    sudo chown "$USERNAME":"$USERNAME" "$REPO"
+    sudo chown "$USERNAME:$USERNAME" "$REPO"
     borg init --encryption=repokey "$REPO"
 fi
 
-echo "==> Step 3: Create or update backup script..."
+echo "==> Step 3: Prompt for passphrase (will be embedded in memory only)..."
+read -s -p "Enter your Borg repository passphrase: " BORG_PASSPHRASE
+echo
+
+echo "==> Step 4: Create or update backup script..."
 sudo tee "$SCRIPT_PATH" > /dev/null <<EOF
 #!/bin/bash
 
+exec >> "$LOG_FILE" 2>&1
+echo "== Borg Backup started at \$(date) =="
+
 ARCHIVE="home-latest"
+REPO="$REPO"
 
 borg create --stats --progress --checkpoint-interval 600 --compression lz4 \\
   --exclude "/home/$USERNAME/.cache" \\
   --exclude "/home/$USERNAME/Downloads" \\
-  --force \\
-  "$REPO::\$ARCHIVE" /home/$USERNAME
+  "\$REPO::\$ARCHIVE" /home/$USERNAME
 
-echo "Borg backup completed at \$(date)"
+echo "== Borg Backup completed at \$(date) =="
 EOF
 sudo chmod +x "$SCRIPT_PATH"
-echo "-- Backup script saved to $SCRIPT_PATH."
+sudo touch "$LOG_FILE"
+sudo chown "$USERNAME:$USERNAME" "$LOG_FILE"
+echo "-- Backup script saved to $SCRIPT_PATH and logs to $LOG_FILE."
 
-echo "==> Step 4: Create systemd service..."
-if [ ! -f "$SERVICE_FILE" ]; then
-    sudo tee "$SERVICE_FILE" > /dev/null <<EOF
+echo "==> Step 5: Create systemd service..."
+sudo tee "$SERVICE_FILE" > /dev/null <<EOF
 [Unit]
 Description=Borg Backup Service
 
 [Service]
 Type=oneshot
+User=$USERNAME
+Environment="BORG_PASSPHRASE=$BORG_PASSPHRASE"
 ExecStart=$SCRIPT_PATH
 EOF
-    echo "-- Created $SERVICE_FILE"
-else
-    echo "-- $SERVICE_FILE already exists."
-fi
+echo "-- Created/Updated $SERVICE_FILE"
 
-echo "==> Step 5: Create systemd timer..."
-if [ ! -f "$TIMER_FILE" ]; then
-    sudo tee "$TIMER_FILE" > /dev/null <<EOF
+echo "==> Step 6: Create systemd timer..."
+sudo tee "$TIMER_FILE" > /dev/null <<EOF
 [Unit]
 Description=Run Borg backup daily
 
@@ -71,18 +78,15 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
-    echo "-- Created $TIMER_FILE"
-else
-    echo "-- $TIMER_FILE already exists."
-fi
+echo "-- Created/Updated $TIMER_FILE"
 
-echo "==> Step 6: Enable and start timer..."
-sudo systemctl daemon-reexec
+echo "==> Step 7: Reload and enable systemd units..."
 sudo systemctl daemon-reload
 sudo systemctl enable --now borg-backup.timer
 
 echo ""
-echo "✅ Borg daily backup is set up!"
+echo "✅ Borg daily backup is fully set up!"
 echo "🕒 Check timer status:    systemctl list-timers borg-backup.timer"
 echo "📂 Check backup list:     borg list $REPO"
-echo "🛠️  Run manually:          sudo $SCRIPT_PATH"
+echo "🛠️  Run manually:          sudo systemctl start borg-backup.service"
+echo "📝 Logs saved to:          $LOG_FILE"
